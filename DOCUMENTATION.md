@@ -28,28 +28,27 @@ The app does not rely on a single point of failure for GenAI generation.
   3. `gemini-2.5-flash-lite` (Ultimate fallback)
 * If a 404 (wrong model version) or 503 (server load) is returned, it instantly falls back to the next tier, ensuring zero UI downtime.
 
-### B. View Degradation Logic
-Inside `PoemScreen.kt`, the content composables utilize the Elvis operator to seamlessly blend AI and offline data:
-```kotlin
-Text(text = poem.aiInsight ?: poem.bhavartha)
-```
-If the AI fetch is completely blocked (e.g., lack of internet), the system falls back to the local `poem.bhavartha` defined in the JSON.
+### B. View Degradation Logic & Content Separation
+Inside `PoemScreen.kt`, structural separation ensures that AI content complements rather than replaces foundational data:
+* **Original UI Fallback:** The top section "ಭಾವಾರ್ಥ (Bhavartha)" always strictly renders `poem.bhavartha` from the local JSON.
+* **AI Enrichment:** The "✨ AI Insight" block is dynamically injected below the core meaning *only* if `poem.aiInsight != null`. If the AI fetch is explicitly blocked (e.g., lack of internet or valid API Key), the system gracefully displays only the offline data and gracefully hides AI-specific UI options.
 
 ### C. Daily Poem Algorithm
 The app statically rotates the featured poem every 24 hours. This is done inside the `PoemViewModel.kt` using a time-based modulus mathematical calculation:
 * `(System.currentTimeMillis() / (1000 * 60 * 60 * 24)) % listsSize`
 * This ensures that every user across different devices sees the exact same poem on any given day without requiring a backend server.
 
-### D. Native Text-To-Speech (TTS) Localization
-The Android `TextToSpeech` engine is heavily utilized to present audible versions of the poetry. 
-* Initialization is handled in `initTTS()`.
-* **Crucial Rule:** The engine is securely locked to `Locale("kn", "IN")` (Kannada, India). The system will strictly refuse to read the content under default system locales to avoid mispronunciation of Kannada poetry.
+### D. Dynamic Multi-Lingual Text-To-Speech (TTS)
+The Android `TextToSpeech` engine features a highly customized multi-lingual chunking system (`speakMixedLanguageText`).
+* **Adaptive Mapping:** Generative AI responses often mix English descriptions with Kannada terminology. The `PoemViewModel` utilizes a char-by-char language scanner (`0x0C80..0x0CFF`) to intelligently slice the response.
+* **Locale Execution:** As TextToSpeech pushes to the audio queue (`QUEUE_ADD`), it instantaneously swaps locales—using `Locale("kn", "IN")` for native Kannada blocks, and `Locale("en", "US")` for English blocks. This achieves completely authentic, dynamic bilingual pronunciation.
 
-### E. Unified BottomSheet Pattern
+### E. Unified BottomSheet Pattern & Contextual Fetching
 Instead of defining multiple complex overlays, the app shares a single instance of `ModalBottomSheet`.
 * The `PoemViewModel` exposes a state: `Pair<String, String>` (Title + Content).
-* When a user clicks a **Word Meaning** or a **Poet Bio** (such as Kuvempu or D.R. Bendre), the ViewModel simply overwrites this `Pair`.
-* The `ModalBottomSheet` observes this change and instantly recomposes the relevant data without mounting/unmounting new components, highly minimizing UI recomposition overhead.
+* When a user taps a **Poet Bio**, the ViewModel simply overwrites this `Pair`.
+* When a user taps a **Word Meaning**, they receive a local fallback dictionary definition. They are then presented with an **"Explain in context of the poem"** button.
+* **Contextual Fetching:** Tapping this triggers a new AI query that specifically binds the single word to the current `poem.verse` scope, and live-updates the `ModalBottomSheet` content with highly granular English literary context once received.
 
 ---
 
@@ -90,7 +89,11 @@ graph TD;
 
 ---
 
-## 5. Security and API Key Management
-The `GEMINI_API_KEY` is completely obfuscated from the version control system. It is injected into the application at compile time via `BuildConfig` variables mapped from the local, non-checked-in `local.properties` file.
+## 5. Security and Persistent API Key Management
+The `GEMINI_API_KEY` is completely obfuscated from version control.
+
+1. **Local Properties Integration:** It is first checked via `BuildConfig` variables mapped natively from the developer's local, non-checked-in `local.properties` file.
+2. **User Persistent SharedPreferences Fallback:** If the `BuildConfig` yields null (e.g., when a user freshly clones the OSS repository), the application seamlessly displays a specialized lock-screen UI. 
+3. **Runtime Registration:** When a user inputs their own API key, it is encrypted and saved persistently locally to Android's `SharedPreferences` (`"kavya_kanaja_prefs"`). The `PoemViewModel.getApiKey()` immediately binds it to the Generative Model, enabling endless localized app usage without a single line of backend database code.
 
 *End of Documentation.*
