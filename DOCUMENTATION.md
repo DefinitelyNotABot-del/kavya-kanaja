@@ -96,4 +96,30 @@ The `GEMINI_API_KEY` is completely obfuscated from version control.
 2. **User Persistent SharedPreferences Fallback:** If the `BuildConfig` yields null (e.g., when a user freshly clones the OSS repository), the application seamlessly displays a specialized lock-screen UI. 
 3. **Runtime Registration:** When a user inputs their own API key, it is encrypted and saved persistently locally to Android's `SharedPreferences` (`"kavya_kanaja_prefs"`). The `PoemViewModel.getApiKey()` immediately binds it to the Generative Model, enabling endless localized app usage without a single line of backend database code.
 
+---
+
+## 6. Challenges & Problems Faced
+
+During the development and architectural planning of Kavya-Kanaja, several technical hurdles were encountered and successfully mitigated:
+
+### A. AI Model Instability & Downtime (404/503 Errors)
+* **Problem:** Direct calls to `gemini-2.5-pro` occasionally resulted in 404 (model not found/version retired) or 503 (server overloaded) HTTP errors, completely breaking the core AI features.
+* **Solution:** Engineered the **Multi-Model Fallback Loop**. The app catches exceptions natively state-side and progressively downgrades to faster, more highly-available models (`flash` and `flash-lite`).
+
+### B. Bilingual Text-to-Speech (TTS) Pronunciation Clashes
+* **Problem:** When the AI generated an English explanation containing Kannada words (or vice versa), the Android TTS engine would attempt to read the Kannada text using the English locale, resulting in skipped words or highly unnatural phonetic pronunciations.
+* **Solution:** Developed a custom `isKannada(c: Char)` Unicode character scanner (`0x0C80..0x0CFF`). It splits generated text into localized chunks and chains them directly into the TTS engine using `TextToSpeech.QUEUE_ADD`, instantly switching back and forth between `kn_IN` and `en_US` locales.
+
+### C. Overwriting Foundational Data
+* **Problem:** The original UI implementation used the Elvis operator (`aiInsight ?: bhavartha`), meaning if an AI insight was successfully fetched, it completely erased and replaced the baseline pedagogical meaning.
+* **Solution:** Restructured the `PoemScreen` Composables. Foundation meaning is now statically retained at the top, while AI responses trigger reactive layout expansions ("✨ AI Insight") physically segmented below the main text.
+
+### D. Windows-Specific Gradle Build Locks (`R.jar`)
+* **Problem:** Continuous rapid prototyping triggered Android Studio/Gradle file-lock exceptions on Windows (`java.io.IOException: Couldn't delete ... R.jar`).
+* **Solution:** Resorted to explicit terminal-level `./gradlew clean build` operations and designed the Compose UI states to be resilient to heavy recompilations without corrupting the local cache.
+
+### E. Open Source API Key Distribution
+* **Problem:** We wanted to upload the project to GitHub, but hardcoding the Gemini API key would violate security protocols. Removing it entirely would cause the app to crash for users who simply clone and run.
+* **Solution:** Built the dynamic "API Key Lock Screen". The code defaults to a secure `local.properties` method natively, but dynamically degrades to an in-app text input that uses `SharedPreferences` to capture and remember a foreign user's API key without ever needing backend integration.
+
 *End of Documentation.*
