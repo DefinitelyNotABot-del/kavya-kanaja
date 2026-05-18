@@ -401,7 +401,7 @@ fun PoemScreen(viewModel: PoemViewModel) {
                             }
                             
                             val isPoet = viewModel.jnanpithPoets.any { it.name == selectedMeaning!!.first }
-                            if (!isPoet) {
+                            if (!isPoet && !isContextExplained) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Button(
                                     onClick = { viewModel.explainWordInContext(selectedMeaning!!.first) },
