@@ -122,4 +122,8 @@ During the development and architectural planning of Kavya-Kanaja, several techn
 * **Problem:** We wanted to upload the project to GitHub, but hardcoding the Gemini API key would violate security protocols. Removing it entirely would cause the app to crash for users who simply clone and run.
 * **Solution:** Built the dynamic "API Key Lock Screen". The code defaults to a secure `local.properties` method natively, but dynamically degrades to an in-app text input that uses `SharedPreferences` to capture and remember a foreign user's API key without ever needing backend integration.
 
+### F. Offline Vocabulary Limitations
+* **Problem:** The localized dataset (`poems.json`) does not contain definitions for every single complex word found in the verses.
+* **Solution:** While common words have hardcoded meanings for immediate offline use, the app seamlessly taps into the AI fallback loop (via `onComplexWordClicked`) to dynamically generate context-aware definitions for any undocumented vocabulary. If offline, the app explicitly communicates the limitation to the user.
+
 *End of Documentation.*
