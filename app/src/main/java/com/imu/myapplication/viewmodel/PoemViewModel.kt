@@ -236,7 +236,7 @@ class PoemViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _selectedMeaning.value = Pair(word, "Thinking (AI in context)...")
-                val prompt = "Explain the meaning and significance of the Kannada word: '$word' specifically within the context of the poem titled '${poem.title}', where the full verse is: '${poem.verse}'. Provide a short explanation in simple English."
+                val prompt = "Explain the meaning and significance of the Kannada word: '$word' specifically within the context of the poem titled '${poem.title}', where the full verse is: '${poem.verse}'. Provide a concise explanation in simple English. Keep it brief and limit your response to a maximum of 3 short paragraphs to fit neatly on a mobile screen."
                 val responseText = generateContentWithFallback(prompt)
                 _selectedMeaning.value = Pair(word, responseText ?: "Contextual meaning not found.")
                 _isOfflineMode.value = false

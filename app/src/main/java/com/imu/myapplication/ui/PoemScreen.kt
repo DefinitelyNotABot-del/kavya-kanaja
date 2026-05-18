@@ -364,6 +364,7 @@ fun PoemScreen(viewModel: PoemViewModel) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
                                 .padding(24.dp)
                         ) {
                             Text(
